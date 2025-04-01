@@ -3,241 +3,258 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Night Heist</title>
+    <title>Item Collection Game</title>
     <style>
         body {
             margin: 0;
             display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            background-size: cover;
-            overflow: hidden;
-            font-family: Arial, sans-serif;
-            color: white;
-            background-image: url(bglibrary.jpg);
-        }
-        
-        .dialogue-container {
-            width: 600px;
-            height: 400px;
-            background-color: rgba(31, 24, 24, 0.5);
-            border-radius: 10px;
-            padding: 20px;
-            display: none; /* Hides dialogue initially */
             flex-direction: column;
-            justify-content: space-between;
-            text-align: center;
-            position: relative;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background: url('bedroom.png') no-repeat center center/cover;
+            overflow: hidden;
         }
-
-        .character-image {
-            width: 250px;
-            height: 250px;
-            position: absolute;
-            top: 95px;
-            left: 50%;
-            transform: translateX(-50%);
+        canvas {
+            display: block;
+            border: 2px solid white;
         }
-
-        .next-btn button {
-            padding: 10px 20px;
-            font-size: 16px;
-            background-color: #008CBA;
+        .inventory {
+            display: flex;
+            justify-content: center;
+            background: #444;
+            padding: 10px;
+            border: 2px solid white;
+            margin-top: 10px;
+        }
+        .inventory-slot {
+            width: 50px;
+            height: 50px;
+            background-color: gray;
+            border: 2px solid white;
+            margin: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
             color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
         }
-
-        .next-btn button:hover {
-            background-color: #005f72;
-        }
-
-        .loading-screen {
+        .door {
             position: absolute;
+            width: 50px;
+            height: 80px;
+            background-color: blue;
+            display: none; /* Door is hidden initially */
+            left: 375px;
+            top: 250px;
+        }
+        .jumpscare {
+            position: fixed;
+            top: 0;
+            left: 0;
             width: 100%;
             height: 100%;
             background: black;
-            display: flex;
-            flex-direction: column;
+            display: none;
             justify-content: center;
             align-items: center;
-            color: white;
+            flex-direction: column;
+        }
+        .jumpscare img {
+            width: 800px;
+            height: auto;
+        }
+        .retry-button {
+            padding: 10px 20px;
             font-size: 24px;
-            font-family: Arial, sans-serif;
+            background: red;
+            color: white;
+            border: none;
+            cursor: pointer;
         }
-
-        .tips {
-            font-size: 18px;
-            margin-top: 10px;
-            opacity: 0.8;
-        }
-
-        canvas {
-            display: none;
-            background: url('hallway.png') no-repeat center;
-            background-size: cover;
-            border: 2px solid black;
+        /* Loading Screen Style */
+        .loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 36px;
+            font-weight: bold;
+            z-index: 9999;
         }
     </style>
 </head>
 <body>
 
-    <!-- Initial Loading Screen -->
-    <div class="loading-screen" id="initialLoadingScreen">
-        Loading...
-        <br><br>
-        <div class="tips">TIPS: Stay quiet, stay hidden.</div>
+    <!-- Loading Screen -->
+    <div id="loadingScreen" class="loading-screen">
+        Loading... Please Wait
     </div>
 
-    <!-- Dialogue Screen (Hidden Initially) -->
-    <div class="dialogue-container" id="dialogueScreen">
-        <img id="characterImage" class="character-image" src="char1.png" alt="Character">
-        <div id="dialogue"></div>
-        <div class="next-btn">
-            <button onclick="nextDialogue()">Next</button>
-        </div>
-    </div>
-
-    <!-- Second Loading Screen (Before Game Starts) -->
-    <div class="loading-screen" id="loadingScreen" style="display: none;">
-        Loading...
-        <br><br>
-        <div class="tips">TIPS: Use headphones for the best experience.</div>
-    </div>
-    
     <canvas id="gameCanvas" width="800" height="600"></canvas>
-    
+    <div class="inventory">
+        <div class="inventory-slot" id="slot1">?</div>
+        <div class="inventory-slot" id="slot2">?</div>
+        <div class="inventory-slot" id="slot3">?</div>
+        <div class="inventory-slot" id="slot4">?</div>
+        <div class="inventory-slot" id="slot5">?</div>
+    </div>
+    <div class="door" id="blueDoor"></div>
+
+    <!-- Jumpscare Screen -->
+    <div class="jumpscare" id="jumpscareScreen">
+        <img src="jscare.gif" alt="Scary Face">
+        <button class="retry-button" onclick="restartGame()">Retry</button>
+    </div>
+
     <script>
-        const dialogues = [
-            { text: "The Holloway family mysteriously vanished one night, leaving behind a perfectly preserved home… untouched, as if they simply disappeared into thin air.", img: "jake-removebg-preview.png" },
-            { text: "That’s weird. No bodies, no clues?", img: "bobby-removebg-preview.png" },
-            { text: "Some say they left. Others believe they were cursed by the land itself.", img: "jake-removebg-preview.png" },
-            { text: "Cursed?", img: "bobby-removebg-preview.png" },
-            { text: "Yeah! The book says an old spirit, some woman named Margaret Hale, used to live there. She lost her family and, before she died, cursed the land so no one else could be happy there. When the Holloways moved in, she got jealous and—poof!—they were gone.", img: "jake-removebg-preview.png" },
-            { text: "That’s just a story.", img: "bobby-removebg-preview.png" },
-            { text: "Maybe. But no one who’s gone in at night has ever stayed long. They say the house wants to keep you.", img: "jake-removebg-preview.png" },
-            { text: "You know… I bet it’s just an old house with a creepy history. I could prove it.", img: "bobby-removebg-preview.png" },
-            { text: "No way. You wouldn’t dare.", img: "jake-removebg-preview.png" },
-            { text: "Watch me.", img: "bobby-removebg-preview.png" },
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Load player and ghost images
+        const playerImage = new Image();
+        playerImage.src = 'player.png';  // Replace with the path to your player image
+
+        const ghostImage = new Image();
+        ghostImage.src = 'ghost.png';  // Replace with the path to your ghost image
+
+        const player = { x: 50, y: 50, size: 40, speed: 3, moving: false };
+        const keys = {};
+        let gameOver = false;
+
+        let items = [
+            { x: 100, y: 100, obtained: false, ghost: { x: 140, y: 100, chasing: false } },
+            { x: 300, y: 200, obtained: false, ghost: { x: 340, y: 200, chasing: false } },
+            { x: 500, y: 300, obtained: false, ghost: { x: 540, y: 300, chasing: false } },
+            { x: 200, y: 400, obtained: false, ghost: { x: 240, y: 400, chasing: false } },
+            { x: 600, y: 150, obtained: false, ghost: { x: 640, y: 150, chasing: false } }
         ];
 
-        let currentDialogue = 0;
+        let inventory = [null, null, null, null, null];
+        const door = document.getElementById("blueDoor");
 
-        function updateDialogue() {
-            document.getElementById("dialogue").textContent = dialogues[currentDialogue].text;
-            document.getElementById("characterImage").src = dialogues[currentDialogue].img;
+        function movePlayer() {
+            if (gameOver) return;
+
+            player.moving = false;
+            if (keys['ArrowUp'] || keys['w']) { player.y -= player.speed; player.moving = true; }
+            if (keys['ArrowDown'] || keys['s']) { player.y += player.speed; player.moving = true; }
+            if (keys['ArrowLeft'] || keys['a']) { player.x -= player.speed; player.moving = true; }
+            if (keys['ArrowRight'] || keys['d']) { player.x += player.speed; player.moving = true; }
+
+            player.x = Math.max(0, Math.min(canvas.width - player.size, player.x));
+            player.y = Math.max(0, Math.min(canvas.height - player.size, player.y));
         }
 
-        function nextDialogue() {
-            currentDialogue++;
-            if (currentDialogue < dialogues.length) {
-                updateDialogue();
-            } else {
-                document.getElementById("dialogueScreen").style.display = "none";
-                document.getElementById("loadingScreen").style.display = "flex";
-                setTimeout(startGame, 1000);
-            }
-        }
+        function updateGhosts() {
+            if (gameOver) return;
 
-        function startGame() {
-    document.getElementById("loadingScreen").style.display = "none";
-    const canvas = document.getElementById('gameCanvas');
-    const ctx = canvas.getContext('2d');
-    canvas.style.display = 'block';
+            items.forEach(item => {
+                const ghost = item.ghost;
+                const distance = Math.hypot(player.x - ghost.x, player.y - ghost.y);
 
-    const background = new Image();
-    background.src = 'hallway.png';
+                if (distance < 100 && player.moving) {
+                    ghost.chasing = true;
+                }
 
-    const playerImg = new Image();
-    playerImg.src = 'player.png';
+                if (ghost.chasing) {
+                    const angle = Math.atan2(player.y - ghost.y, player.x - ghost.x);
+                    ghost.x += Math.cos(angle) * 2.5;
+                    ghost.y += Math.sin(angle) * 2.5;
 
-    const player = { x: 400, y: 300, speed: 3, width: 70, height: 78 };
-    const doors = [
-    { x: 125, y: 200, width: 80, height: 35, map: 'map2.html' },
-            { x: 400, y: 200, width: 80, height: 35, map: 'map3.html' },
-            { x: 770, y: 200, width: 80, height: 35, map: 'map4.html' },
-            { x: 1350, y: 200, width: 80, height: 35, map: 'map5.html' },
-            { x: 770, y: 520, width: 80, height: 35, map: 'map6.html' },
-            
-            ];
-
-            const keys = {};
-            
-            let camera = { x: 0, y: 0, width: canvas.width, height: canvas.height };
-            let mapWidth = 1600;
-            let mapHeight = 490;
-
-            document.addEventListener('keydown', (e) => { keys[e.key.toLowerCase()] = true; });
-            document.addEventListener('keyup', (e) => { keys[e.key.toLowerCase()] = false; });
-
-            function checkDoorCollision() {
-                for (let door of doors) {
-                    if (
-                        player.x < door.x + door.width &&
-                        player.x + player.width > door.x &&
-                        player.y < door.y + door.height &&
-                        player.y + player.height > door.y
-                    ) {
-                        window.location.href = door.map;
+                    if (distance < 20) {
+                        triggerJumpscare();
                     }
                 }
-            }
-
-            function update() {
-                if (keys['arrowup'] || keys['w']) player.y -= player.speed;
-                if (keys['arrowdown'] || keys['s']) player.y += player.speed;
-                if (keys['arrowleft'] || keys['a']) player.x -= player.speed;
-                if (keys['arrowright'] || keys['d']) player.x += player.speed;
-
-                player.x = Math.max(0, Math.min(mapWidth - player.width, player.x));
-                player.y = Math.max(0, Math.min(mapHeight - player.height, player.y));
-                
-                camera.x = player.x - canvas.width / 2;
-                camera.y = player.y - canvas.height / 2;
-                
-                camera.x = Math.max(0, Math.min(mapWidth - camera.width, camera.x));
-                camera.y = Math.max(0, Math.min(mapHeight - camera.height, camera.y));
-
-                checkDoorCollision();
-            }
-
-            function draw() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.drawImage(background, -camera.x, -camera.y, mapWidth, mapHeight);
-    ctx.drawImage(playerImg, player.x - camera.x, player.y - camera.y, player.width, player.height);
-
-    // Doors are no longer drawn, but still exist for collision detection
-}
-
-            function gameLoop() {
-                update();
-                draw();
-                requestAnimationFrame(gameLoop);
-            }
-
-            gameLoop();
+            });
         }
-         // **NEW CODE: Check if dialogue has been seen before**
-    window.onload = function () {
-        if (sessionStorage.getItem("seenDialogue")) {
-            // Skip dialogue, go straight to the game
-            document.getElementById("initialLoadingScreen").style.display = "none";
-            document.getElementById("dialogueScreen").style.display = "none";
-            document.getElementById("loadingScreen").style.display = "none";
-            startGame();
-        } else {
-            // Show dialogue, then set flag in sessionStorage
-            setTimeout(() => {
-                document.getElementById("initialLoadingScreen").style.display = "none";
-                document.getElementById("dialogueScreen").style.display = "flex";
-                updateDialogue();
-                sessionStorage.setItem("seenDialogue", "true");
-            }, 3000);
+
+        function checkCollisions() {
+            if (gameOver) return;
+
+            items.forEach((item, index) => {
+                if (!item.obtained && Math.hypot(player.x - item.x, player.y - item.y) < 25) {
+                    item.obtained = true;
+
+                    for (let i = 0; i < inventory.length; i++) {
+                        if (inventory[i] === null) {
+                            inventory[i] = "✔";
+                            document.getElementById(`slot${i + 1}`).textContent = "✔";
+                            break;
+                        }
+                    }
+                }
+            });
+
+            // If all items are obtained, show the door
+            if (items.every(item => item.obtained)) {
+                door.style.display = "block";
+            }
+
+            // Door collision detection and instant win condition
+            const doorDistance = Math.hypot(player.x - 375, player.y - 250);
+            if (doorDistance < 30) {
+                window.location.href = "win.html";  // Redirect to win.html instantly when the player enters the door
+            }
         }
-    };
-        
+
+        function draw() {
+            if (gameOver) return;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw the player image
+            ctx.drawImage(playerImage, player.x, player.y, player.size, player.size);
+
+            // Draw items (gold squares for now)
+            items.forEach(item => {
+                if (!item.obtained) {
+                    ctx.fillStyle = "gold";
+                    ctx.fillRect(item.x, item.y, 20, 20);
+                }
+            });
+
+            // Draw ghosts
+            items.forEach(item => {
+                const ghost = item.ghost;
+                ctx.drawImage(ghostImage, ghost.x, ghost.y, 65, 55);
+            });
+        }
+
+        function gameLoop() {
+            movePlayer();
+            updateGhosts();
+            checkCollisions();
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+
+        function triggerJumpscare() {
+            gameOver = true;
+            document.getElementById("jumpscareScreen").style.display = "flex";
+        }
+
+        function restartGame() {
+            location.reload();
+        }
+
+        // Show loading screen and start the game after 3 seconds
+        window.onload = function() {
+            setTimeout(function() {
+                document.getElementById("loadingScreen").style.display = "none";
+                gameLoop();  // Start the game loop
+            }, 3000);  // 3 seconds delay
+        };
+
+        window.addEventListener("keydown", (e) => { keys[e.key.toLowerCase()] = true; });
+        window.addEventListener("keyup", (e) => { keys[e.key.toLowerCase()] = false; });
+
     </script>
 
 </body>
