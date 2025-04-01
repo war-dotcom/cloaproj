@@ -223,6 +223,29 @@ h1{
 
 
 
+.gallery-container {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 20px;
+    margin-top: 20px;
+}
+
+
+.gallery-container img{
+    height: 200px;
+    width: 300px;
+    border-radius: 50px;
+    border: solid red 3px;
+    display: block;
+    margin: 0 auto;
+}
+
+
+
+
+
+
 
 
 
@@ -293,4 +316,18 @@ font-family: "Rock Salt", cursive;
     font-size: 30px;
     justify-content: center;
     text-align: center;
+}
+
+.chap-container{
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 20px;
+    margin-top: 20px;
+}
+.chap-container img{
+    height: 650px;
+    width: auto;
+    display: block;
+    margin: 0 auto;
 }
